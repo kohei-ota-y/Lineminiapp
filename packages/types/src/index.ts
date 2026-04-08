@@ -36,6 +36,7 @@ export interface Member {
   id: string;
   tenant_id: string;
   line_user_id: string;
+  auth_user_id: string | null;
   display_name: string;
   picture_url: string | null;
   rank: MemberRank;

@@ -1,10 +1,10 @@
 "use client";
 
-import { useLiff } from "@/lib/liff";
+import { useAuth } from "@/components/AuthProvider";
 import { MemberCard } from "@/components/MemberCard";
 
 export default function HomePage() {
-  const { isLoggedIn, isLoading, error, profile } = useLiff();
+  const { isAuthenticated, isLoading, error, member } = useAuth();
 
   if (isLoading) {
     return (
@@ -28,7 +28,7 @@ export default function HomePage() {
     );
   }
 
-  if (!isLoggedIn || !profile) {
+  if (!isAuthenticated || !member) {
     return (
       <div className="flex items-center justify-center min-h-screen p-4">
         <div className="bg-white rounded-xl p-6 shadow-sm text-center max-w-sm">
@@ -41,12 +41,12 @@ export default function HomePage() {
   return (
     <main className="max-w-md mx-auto px-4 py-6 space-y-4">
       <MemberCard
-        displayName={profile.displayName}
-        pictureUrl={profile.pictureUrl}
-        rank="regular"
-        totalPoints={0}
+        displayName={member.displayName}
+        pictureUrl={member.pictureUrl ?? undefined}
+        rank={member.rank}
+        totalPoints={member.totalPoints}
         visitCount={0}
-        memberId="---"
+        memberId={member.id}
       />
 
       {/* ポイント・クーポンは次のステップで実装 */}

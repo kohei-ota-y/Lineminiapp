@@ -1,32 +1,30 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import type liff from "@line/liff";
 
 type Liff = typeof liff;
-
-interface LiffProfile {
-  userId: string;
-  displayName: string;
-  pictureUrl?: string;
-}
 
 interface UseLiffReturn {
   liff: Liff | null;
   isLoggedIn: boolean;
   isLoading: boolean;
   error: string | null;
-  profile: LiffProfile | null;
+  getIDToken: () => string | null;
 }
 
 const LIFF_ID = process.env.NEXT_PUBLIC_LIFF_ID ?? "";
 
+/**
+ * LIFF SDK のラッパーフック。
+ * LIFF の初期化とログインのみを担当する。
+ * 認証ロジック（IDトークン送信・会員情報取得）は AuthProvider で行う。
+ */
 export function useLiff(): UseLiffReturn {
   const [liffInstance, setLiffInstance] = useState<Liff | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [profile, setProfile] = useState<LiffProfile | null>(null);
 
   useEffect(() => {
     if (!LIFF_ID) {
@@ -47,12 +45,6 @@ export function useLiff(): UseLiffReturn {
         }
 
         setIsLoggedIn(true);
-        const userProfile = await liff.getProfile();
-        setProfile({
-          userId: userProfile.userId,
-          displayName: userProfile.displayName,
-          pictureUrl: userProfile.pictureUrl,
-        });
       })
       .catch((e: Error) => {
         setError(e.message);
@@ -62,5 +54,12 @@ export function useLiff(): UseLiffReturn {
       });
   }, []);
 
-  return { liff: liffInstance, isLoggedIn, isLoading, error, profile };
+  const getIDToken = useCallback((): string | null => {
+    if (!liffInstance) {
+      return null;
+    }
+    return liffInstance.getIDToken();
+  }, [liffInstance]);
+
+  return { liff: liffInstance, isLoggedIn, isLoading, error, getIDToken };
 }

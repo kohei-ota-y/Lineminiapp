@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { AuthProvider } from "@/components/AuthProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -19,7 +20,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ja">
-      <body className="min-h-screen bg-luca-background">{children}</body>
+      <body className="min-h-screen bg-luca-background">
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }
