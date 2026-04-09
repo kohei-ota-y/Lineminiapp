@@ -197,7 +197,37 @@ export type Database = {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      use_coupon: {
+        Args: {
+          p_coupon_id: string;
+          p_member_id: string;
+          p_tenant_id: string;
+        };
+        Returns: {
+          ok: boolean;
+          data?: { usedAt: string };
+          error?: string;
+        };
+      };
+      earn_points: {
+        Args: {
+          p_member_id: string;
+          p_tenant_id: string;
+          p_amount: number;
+          p_description?: string | null;
+        };
+        Returns: {
+          ok: boolean;
+          data?: {
+            transactionId: string;
+            amount: number;
+            newBalance: number;
+          };
+          error?: string;
+        };
+      };
+    };
     Enums: Record<string, never>;
   };
 };
