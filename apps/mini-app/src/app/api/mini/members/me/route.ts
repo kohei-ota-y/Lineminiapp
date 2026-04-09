@@ -36,25 +36,17 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // 3. アクセストークンでSupabaseクライアントを作成
-  const supabase = createClient(supabaseUrl, supabaseAnonKey);
-  const { error: sessionError } = await supabase.auth.setSession({
-    access_token: accessToken,
-    refresh_token: "",
+  // 3. アクセストークンでSupabaseクライアントを作成（グローバルヘッダーでRLS適用）
+  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: `Bearer ${accessToken}` } },
+    auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  if (sessionError) {
-    return NextResponse.json(
-      { ok: false, error: "セッションの設定に失敗しました" },
-      { status: 401 },
-    );
-  }
-
-  // 4. ユーザー情報を取得
+  // 4. トークンを直接渡してユーザー情報を取得（refresh_token不要）
   const {
     data: { user },
     error: userError,
-  } = await supabase.auth.getUser();
+  } = await supabase.auth.getUser(accessToken);
 
   if (userError || !user) {
     return NextResponse.json(

@@ -171,7 +171,7 @@ async function issueAuthToken(
   lineUserId: string,
   existingAuthUserId: string | null,
 ): Promise<
-  { ok: true; data: { accessToken: string; authUserId: string } } | { ok: false; error: string }
+  { ok: true; data: { accessToken: string; refreshToken: string; authUserId: string } } | { ok: false; error: string }
 > {
   const email = `${lineUserId}@line.luca.internal`;
   const appMetadata = { tenant_id: tenantId, member_id: memberId };
@@ -260,7 +260,11 @@ async function issueAuthToken(
 
   return {
     ok: true,
-    data: { accessToken: signInData.session.access_token, authUserId },
+    data: {
+      accessToken: signInData.session.access_token,
+      refreshToken: signInData.session.refresh_token,
+      authUserId,
+    },
   };
 }
 
@@ -382,6 +386,7 @@ export async function POST(request: NextRequest) {
     ok: true,
     data: {
       accessToken: tokenResult.data.accessToken,
+      refreshToken: tokenResult.data.refreshToken,
       member: {
         id: member.id,
         displayName: member.display_name,
