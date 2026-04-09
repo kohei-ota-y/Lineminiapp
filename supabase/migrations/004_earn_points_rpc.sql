@@ -37,8 +37,8 @@ begin
   values (p_member_id, p_tenant_id, p_amount, v_new_balance, 'earn', p_description)
   returning id into v_transaction_id;
 
-  -- 会員のポイント残高を更新
-  update members set total_points = v_new_balance where id = p_member_id;
+  -- 会員のポイント残高と来店回数を更新
+  update members set total_points = v_new_balance, visit_count = visit_count + 1 where id = p_member_id;
 
   return json_build_object('ok', true, 'data', json_build_object(
     'transactionId', v_transaction_id,

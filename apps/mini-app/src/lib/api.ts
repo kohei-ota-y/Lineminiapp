@@ -50,7 +50,6 @@ export async function fetchApi<T>(
       },
     });
   } catch (err) {
-    clearTimeout(timeoutId);
     if (err instanceof DOMException && err.name === "AbortError") {
       return { ok: false, error: "リクエストがタイムアウトしました" };
     }
