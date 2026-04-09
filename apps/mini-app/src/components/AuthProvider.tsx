@@ -50,6 +50,7 @@ interface AuthApiResponse {
   ok: boolean;
   data?: {
     accessToken: string;
+    refreshToken: string;
     member: AuthMember;
   };
   error?: string;
@@ -132,10 +133,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        const { accessToken, member: memberData } = body.data;
+        const { accessToken, refreshToken, member: memberData } = body.data;
 
         // 3. Supabase クライアントにセッションをセット
-        const sessionResult = await setSupabaseSession(accessToken);
+        const sessionResult = await setSupabaseSession(accessToken, refreshToken);
         if (!sessionResult.ok) {
           setAuthError(sessionResult.error);
           return;

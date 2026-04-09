@@ -33,11 +33,12 @@ export function getSupabase(): SupabaseClient<Database> {
  */
 export async function setSupabaseSession(
   accessToken: string,
+  refreshToken: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const client = getSupabase();
   const { error } = await client.auth.setSession({
     access_token: accessToken,
-    refresh_token: "",
+    refresh_token: refreshToken,
   });
 
   if (error) {
