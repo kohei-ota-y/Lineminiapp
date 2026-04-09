@@ -1,11 +1,46 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { MemberCard } from "@/components/MemberCard";
+import { PointHistory } from "@/components/PointHistory";
 import { CouponList } from "@/components/CouponList";
+import { fetchApi } from "@/lib/api";
+import type { PointTransaction } from "@luca/types";
 
 export default function HomePage() {
   const { isAuthenticated, isLoading, error, member } = useAuth();
+
+  // ポイント履歴の状態管理
+  const [transactions, setTransactions] = useState<PointTransaction[]>([]);
+  const [pointsLoading, setPointsLoading] = useState(false);
+  const [pointsError, setPointsError] = useState<string | null>(null);
+
+  // 認証完了後にポイント履歴を取得
+  useEffect(() => {
+    if (!isAuthenticated || !member) {
+      return;
+    }
+
+    const loadPoints = async () => {
+      setPointsLoading(true);
+      setPointsError(null);
+
+      const result = await fetchApi<{ transactions: PointTransaction[] }>(
+        "/api/mini/points",
+      );
+
+      if (result.ok) {
+        setTransactions(result.data.transactions);
+      } else {
+        setPointsError(result.error);
+      }
+
+      setPointsLoading(false);
+    };
+
+    loadPoints();
+  }, [isAuthenticated, member]);
 
   if (isLoading) {
     return (
@@ -50,11 +85,11 @@ export default function HomePage() {
         memberId={member.id}
       />
 
-      {/* ポイント・クーポンは次のステップで実装 */}
-      <div className="bg-white rounded-xl p-4 shadow-sm">
-        <h2 className="font-bold text-lg mb-2">ポイント履歴</h2>
-        <p className="text-gray-400 text-sm">まだポイント履歴はありません</p>
-      </div>
+      <PointHistory
+        transactions={transactions}
+        isLoading={pointsLoading}
+        error={pointsError}
+      />
 
       <CouponList />
     </main>

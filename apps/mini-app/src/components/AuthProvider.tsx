@@ -2,6 +2,7 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useState,
@@ -9,6 +10,7 @@ import {
 } from "react";
 import { useLiff } from "@/lib/liff";
 import { setSupabaseSession } from "@/lib/supabase";
+import { fetchApi } from "@/lib/api";
 import type { MemberRank } from "@luca/types";
 
 // ---------- 型定義 ----------
@@ -27,6 +29,8 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  /** /api/mini/members/me を呼んで会員情報を最新に更新する */
+  refreshMember: () => Promise<void>;
 }
 
 interface AuthApiResponse {
@@ -45,6 +49,7 @@ const AuthContext = createContext<AuthContextValue>({
   isAuthenticated: false,
   isLoading: true,
   error: null,
+  refreshMember: async () => {},
 });
 
 // ---------- Provider ----------
@@ -130,6 +135,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     authenticate();
   }, [isLiffLoading, isLoggedIn, getIDToken]);
 
+  /**
+   * /api/mini/members/me を呼んで会員情報を最新に更新する。
+   * ポイント付与・来店記録の後などに呼び出すことで、
+   * visitCount や totalPoints を画面に反映できる。
+   */
+  const refreshMember = useCallback(async () => {
+    const result = await fetchApi<{ member: AuthMember }>(
+      "/api/mini/members/me",
+    );
+    if (result.ok) {
+      setMember(result.data.member);
+    }
+  }, []);
+
   // ローディング状態: LIFF読み込み中 or 認証処理中
   const isLoading = isLiffLoading || isAuthLoading;
   // エラー: LIFF エラー or 認証エラー
@@ -137,7 +156,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAuthenticated = member !== null;
 
   return (
-    <AuthContext.Provider value={{ member, isAuthenticated, isLoading, error }}>
+    <AuthContext.Provider value={{ member, isAuthenticated, isLoading, error, refreshMember }}>
       {children}
     </AuthContext.Provider>
   );
