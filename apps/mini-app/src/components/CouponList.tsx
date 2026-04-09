@@ -1,97 +1,53 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { getSupabase } from "@/lib/supabase";
+import { useCallback, useEffect, useState } from "react";
+import { fetchApi } from "@/lib/api";
 import { CouponCard } from "@/components/CouponCard";
+import { CardSkeleton } from "@/components/Skeleton";
+import { ErrorMessage } from "@/components/ErrorMessage";
 import type { CouponCardProps } from "@/components/CouponCard";
 
 // ---------- 型定義 ----------
 
 type CouponData = Omit<CouponCardProps, "onUse">;
 
-interface CouponsApiResponse {
-  ok: boolean;
-  data?: {
-    coupons: CouponData[];
-  };
-  error?: string;
-}
-
 // ---------- コンポーネント ----------
 
 /**
  * クーポン一覧を取得して表示するコンポーネント。
- * Supabase のセッションから access_token を取得し、
- * /api/mini/coupons に Bearer 認証でリクエストする。
+ * fetchApi を使い、認証トークン付きで /api/mini/coupons にリクエストする。
+ * ローディング中は CardSkeleton、エラー時は ErrorMessage を表示する。
  */
 export function CouponList() {
   const [coupons, setCoupons] = useState<CouponData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchCoupons = async () => {
-      setIsLoading(true);
-      setError(null);
+  const loadCoupons = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
 
-      // 1. Supabase セッションからアクセストークンを取得
-      const supabase = getSupabase();
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData?.session?.access_token;
+    const result = await fetchApi<{ coupons: CouponData[] }>(
+      "/api/mini/coupons",
+    );
 
-      if (!accessToken) {
-        setError("認証情報が取得できませんでした");
-        setIsLoading(false);
-        return;
-      }
+    if (result.ok) {
+      setCoupons(result.data.coupons);
+    } else {
+      setError(result.error);
+    }
 
-      // 2. API リクエスト
-      let res: Response;
-      try {
-        res = await fetch("/api/mini/coupons", {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        });
-      } catch {
-        setError("クーポン情報の取得に失敗しました");
-        setIsLoading(false);
-        return;
-      }
-
-      let body: CouponsApiResponse;
-      try {
-        body = await res.json();
-      } catch {
-        setError("レスポンスの解析に失敗しました");
-        setIsLoading(false);
-        return;
-      }
-
-      if (!body.ok || !body.data) {
-        setError(body.error ?? "クーポンの取得に失敗しました");
-        setIsLoading(false);
-        return;
-      }
-
-      setCoupons(body.data.coupons);
-      setIsLoading(false);
-    };
-
-    fetchCoupons();
+    setIsLoading(false);
   }, []);
+
+  useEffect(() => {
+    loadCoupons();
+  }, [loadCoupons]);
 
   // ---------- ローディング ----------
 
   if (isLoading) {
-    return (
-      <div className="bg-white rounded-xl p-4 shadow-sm">
-        <h2 className="font-bold text-lg mb-2">クーポン</h2>
-        <div className="flex justify-center py-4">
-          <div className="animate-spin h-6 w-6 border-3 border-luca-primary border-t-transparent rounded-full" />
-        </div>
-      </div>
-    );
+    return <CardSkeleton showTitle lines={3} />;
   }
 
   // ---------- エラー ----------
@@ -100,7 +56,7 @@ export function CouponList() {
     return (
       <div className="bg-white rounded-xl p-4 shadow-sm">
         <h2 className="font-bold text-lg mb-2">クーポン</h2>
-        <p className="text-red-500 text-sm">{error}</p>
+        <ErrorMessage message={error} onRetry={loadCoupons} />
       </div>
     );
   }
