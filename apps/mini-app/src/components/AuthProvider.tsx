@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -71,65 +72,66 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
+  // 二重認証防止ガード
+  const authenticatingRef = useRef(false);
+
   useEffect(() => {
     // LIFF がまだ読み込み中、またはログインしていない場合はスキップ
-    if (isLiffLoading || !isLoggedIn) {
+    if (isLiffLoading || !isLoggedIn || authenticatingRef.current) {
       return;
     }
+    authenticatingRef.current = true;
 
     const authenticate = async () => {
       setIsAuthLoading(true);
-
-      // 1. IDトークンを取得
-      const idToken = getIDToken();
-      if (!idToken) {
-        setAuthError("IDトークンの取得に失敗しました");
-        setIsAuthLoading(false);
-        return;
-      }
-
-      // 2. サーバーに認証リクエストを送信
-      let res: Response;
       try {
-        res = await fetch("/api/mini/auth/line", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ idToken }),
-        });
-      } catch {
-        setAuthError("認証サーバーへの接続に失敗しました");
+        // 1. IDトークンを取得
+        const idToken = getIDToken();
+        if (!idToken) {
+          setAuthError("IDトークンの取得に失敗しました");
+          return;
+        }
+
+        // 2. サーバーに認証リクエストを送信
+        let res: Response;
+        try {
+          res = await fetch("/api/mini/auth/line", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ idToken }),
+          });
+        } catch {
+          setAuthError("認証サーバーへの接続に失敗しました");
+          return;
+        }
+
+        let body: AuthApiResponse;
+        try {
+          body = await res.json();
+        } catch {
+          setAuthError("認証レスポンスの解析に失敗しました");
+          return;
+        }
+
+        if (!body.ok || !body.data) {
+          setAuthError(body.error ?? "認証に失敗しました");
+          return;
+        }
+
+        const { accessToken, member: memberData } = body.data;
+
+        // 3. Supabase クライアントにセッションをセット
+        const sessionResult = await setSupabaseSession(accessToken);
+        if (!sessionResult.ok) {
+          setAuthError(sessionResult.error);
+          return;
+        }
+
+        // 4. 会員情報を保持
+        setMember(memberData);
+      } finally {
         setIsAuthLoading(false);
-        return;
       }
-
-      let body: AuthApiResponse;
-      try {
-        body = await res.json();
-      } catch {
-        setAuthError("認証レスポンスの解析に失敗しました");
-        setIsAuthLoading(false);
-        return;
-      }
-
-      if (!body.ok || !body.data) {
-        setAuthError(body.error ?? "認証に失敗しました");
-        setIsAuthLoading(false);
-        return;
-      }
-
-      const { accessToken, member: memberData } = body.data;
-
-      // 3. Supabase クライアントにセッションをセット
-      const sessionResult = await setSupabaseSession(accessToken);
-      if (!sessionResult.ok) {
-        setAuthError(sessionResult.error);
-        setIsAuthLoading(false);
-        return;
-      }
-
-      // 4. 会員情報を保持
-      setMember(memberData);
-      setIsAuthLoading(false);
     };
 
     authenticate();

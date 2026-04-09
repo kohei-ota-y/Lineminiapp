@@ -82,6 +82,8 @@ async function verifyLineToken(
     }
 
     return { ok: true, data: lineUser };
+  } catch {
+    return { ok: false, error: "LINE APIへの接続がタイムアウトしました" };
   } finally {
     clearTimeout(timeout);
   }

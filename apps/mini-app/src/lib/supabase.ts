@@ -1,4 +1,6 @@
-import { createClient } from "@luca/db";
+"use client";
+
+import { createClient as supabaseCreateClient } from "@supabase/supabase-js";
 import type { Database } from "@luca/db";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -10,10 +12,16 @@ let _supabase: SupabaseClient<Database> | null = null;
 /**
  * フロントエンド用 Supabase クライアント（anon key使用）
  * 遅延初期化により、ビルド時（環境変数未設定）にはクラッシュしない。
+ * autoRefreshToken: false — LIFFミニアプリではトークン切れ時にLIFF再認証を行う。
  */
 export function getSupabase(): SupabaseClient<Database> {
   if (!_supabase) {
-    _supabase = createClient(supabaseUrl, supabaseAnonKey);
+    _supabase = supabaseCreateClient<Database>(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
   }
   return _supabase;
 }
