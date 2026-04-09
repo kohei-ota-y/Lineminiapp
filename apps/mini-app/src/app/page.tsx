@@ -2,6 +2,7 @@
 
 import { useAuth } from "@/components/AuthProvider";
 import { MemberCard } from "@/components/MemberCard";
+import { CouponList } from "@/components/CouponList";
 
 export default function HomePage() {
   const { isAuthenticated, isLoading, error, member } = useAuth();
@@ -45,7 +46,7 @@ export default function HomePage() {
         pictureUrl={member.pictureUrl ?? undefined}
         rank={member.rank}
         totalPoints={member.totalPoints}
-        visitCount={0}
+        visitCount={member.visitCount}
         memberId={member.id}
       />
 
@@ -55,10 +56,7 @@ export default function HomePage() {
         <p className="text-gray-400 text-sm">まだポイント履歴はありません</p>
       </div>
 
-      <div className="bg-white rounded-xl p-4 shadow-sm">
-        <h2 className="font-bold text-lg mb-2">クーポン</h2>
-        <p className="text-gray-400 text-sm">利用可能なクーポンはありません</p>
-      </div>
+      <CouponList />
     </main>
   );
 }

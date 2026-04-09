@@ -19,6 +19,7 @@ interface AuthMember {
   pictureUrl: string | null;
   rank: MemberRank;
   totalPoints: number;
+  visitCount: number;
 }
 
 interface AuthContextValue {

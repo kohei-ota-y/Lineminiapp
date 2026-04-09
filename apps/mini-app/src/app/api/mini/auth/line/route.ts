@@ -386,6 +386,7 @@ export async function POST(request: NextRequest) {
         pictureUrl: member.picture_url,
         rank: member.rank,
         totalPoints: member.total_points,
+        visitCount: member.visit_count,
       },
     },
   });
