@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --luca-primary: #06C755;
+  --luca-secondary: #4A90D9;
+  --luca-bg: #F5F5F5;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans",
+    "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+  background-color: var(--luca-bg);
+}
