@@ -11,6 +11,7 @@
     "dev:admin": "turbo dev --filter=@luca/admin",
     "db:migrate": "supabase db push",
     "db:reset": "supabase db reset",
+    "db:seed": "supabase db reset && supabase db query --file supabase/seed.sql",
     "db:types": "supabase gen types typescript --local > packages/db/src/database.types.ts"
   },
   "devDependencies": {
