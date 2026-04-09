@@ -37,10 +37,10 @@ begin
     return json_build_object('ok', false, 'error', 'このクーポンの使用上限に達しました');
   end if;
 
-  -- 重複使用チェック
+  -- 重複使用チェック（tenant_id も条件に含める）
   select exists(
     select 1 from coupon_uses
-    where coupon_id = p_coupon_id and member_id = p_member_id
+    where coupon_id = p_coupon_id and member_id = p_member_id and tenant_id = p_tenant_id
   ) into v_already_used;
 
   if v_already_used then

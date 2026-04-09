@@ -60,6 +60,21 @@ type CouponUseRow = {
   used_at: string;
 };
 
+type TenantSettingsRow = {
+  id: string;
+  tenant_id: string;
+  brand_color: string;
+  logo_url: string | null;
+  feature_point: boolean;
+  feature_stamp: boolean;
+  feature_coupon: boolean;
+  feature_reservation: boolean;
+  feature_order: boolean;
+  point_rate: number;
+  created_at: string;
+  updated_at: string;
+};
+
 // ---------- Database type ----------
 export type Database = {
   public: {
@@ -190,6 +205,30 @@ export type Database = {
             foreignKeyName: "coupon_uses_tenant_id_fkey";
             columns: ["tenant_id"];
             isOneToOne: false;
+            referencedRelation: "tenants";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      tenant_settings: {
+        Row: TenantSettingsRow;
+        Insert: Omit<TenantSettingsRow, "id" | "created_at" | "updated_at"> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<
+          Omit<TenantSettingsRow, "id" | "created_at" | "updated_at"> & {
+            id?: string;
+            created_at?: string;
+            updated_at?: string;
+          }
+        >;
+        Relationships: [
+          {
+            foreignKeyName: "tenant_settings_tenant_id_fkey";
+            columns: ["tenant_id"];
+            isOneToOne: true;
             referencedRelation: "tenants";
             referencedColumns: ["id"];
           },
