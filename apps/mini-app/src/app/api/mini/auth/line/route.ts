@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomBytes } from "crypto";
 import { getServiceClient } from "@/lib/supabase-server";
+import { createClient } from "@luca/db";
 import type { Member, MemberRank } from "@luca/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@luca/db";
