@@ -57,21 +57,33 @@ async function verifyLineToken(
 ): Promise<
   { ok: true; data: LineVerifyResponse } | { ok: false; error: string }
 > {
-  const verifyRes = await fetch("https://api.line.me/oauth2/v2.1/verify", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      id_token: idToken,
-      client_id: LINE_CHANNEL_ID,
-    }),
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+  try {
+    const verifyRes = await fetch("https://api.line.me/oauth2/v2.1/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        id_token: idToken,
+        client_id: LINE_CHANNEL_ID,
+      }),
+      signal: controller.signal,
+    });
 
-  if (!verifyRes.ok) {
-    return { ok: false, error: "トークン検証に失敗しました" };
+    if (!verifyRes.ok) {
+      return { ok: false, error: "トークン検証に失敗しました" };
+    }
+
+    const lineUser: LineVerifyResponse = await verifyRes.json();
+
+    if (lineUser.aud !== LINE_CHANNEL_ID) {
+      return { ok: false, error: "トークンの対象チャネルが不正です" };
+    }
+
+    return { ok: true, data: lineUser };
+  } finally {
+    clearTimeout(timeout);
   }
-
-  const lineUser: LineVerifyResponse = await verifyRes.json();
-  return { ok: true, data: lineUser };
 }
 
 /**
@@ -223,17 +235,25 @@ async function issueAuthToken(
   }
 
   // 一時パスワードでサインインしてセッションを取得
+  // signIn 用に anon クライアントを別途作成（service_role クライアントのセッション汚染を防ぐ）
+  const anonClient = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
+  );
   const { data: signInData, error: signInError } =
-    await supabase.auth.signInWithPassword({ email, password: tempPassword });
+    await anonClient.auth.signInWithPassword({ email, password: tempPassword });
 
   if (signInError || !signInData?.session) {
     return { ok: false, error: "セッション作成に失敗しました" };
   }
 
   // サインイン成功後、パスワードを即座にランダム値で上書きして無効化
-  await supabase.auth.admin.updateUserById(authUserId, {
+  const { error: invalidateError } = await supabase.auth.admin.updateUserById(authUserId, {
     password: generateSecurePassword(),
   });
+  if (invalidateError) {
+    console.error("[auth/line] パスワード無効化に失敗:", invalidateError.message);
+  }
 
   return {
     ok: true,
@@ -274,6 +294,13 @@ export async function POST(request: NextRequest) {
   if (!DEFAULT_TENANT_ID) {
     return NextResponse.json(
       { ok: false, error: "テナント設定が不正です" },
+      { status: 500 },
+    );
+  }
+
+  if (!LINE_CHANNEL_ID) {
+    return NextResponse.json(
+      { ok: false, error: "LINE設定が不正です" },
       { status: 500 },
     );
   }
