@@ -9,6 +9,22 @@ export function createClient(supabaseUrl: string, supabaseAnonKey: string) {
 }
 
 /**
+ * ユーザーJWT付きサーバーサイドクライアント
+ * Authorization ヘッダーにアクセストークンを注入してRLSを適用する。
+ * setSession不要でrefresh_tokenなしでも動作する。
+ */
+export function createUserClient(
+  supabaseUrl: string,
+  supabaseAnonKey: string,
+  accessToken: string,
+) {
+  return supabaseCreateClient<Database>(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: `Bearer ${accessToken}` } },
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
+
+/**
  * サーバーサイド用クライアント（service_role key使用）
  * Edge Functions や Server Actions で使用
  */

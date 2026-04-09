@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@luca/db";
+import { createUserClient } from "@luca/db";
 import type { PointTransaction, PointTransactionType } from "@luca/types";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -34,10 +34,7 @@ export async function GET(request: NextRequest) {
   }
 
   // 2. anon クライアントを作成（グローバルヘッダーでRLS適用）
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    global: { headers: { Authorization: `Bearer ${token}` } },
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const supabase = createUserClient(supabaseUrl, supabaseAnonKey, token);
 
   // トークンを直接渡してユーザー情報を取得（refresh_token不要）
   const { data: userData, error: authError } = await supabase.auth.getUser(token);

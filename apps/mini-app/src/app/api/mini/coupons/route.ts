@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@luca/db";
+import { createUserClient } from "@luca/db";
 import type { DiscountType } from "@luca/types";
 
 // ---------- 型定義 ----------
@@ -51,10 +51,7 @@ export async function GET(request: NextRequest) {
   }
 
   // 3. アクセストークンでSupabaseクライアントを作成（グローバルヘッダーでRLS適用）
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    global: { headers: { Authorization: `Bearer ${accessToken}` } },
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const supabase = createUserClient(supabaseUrl, supabaseAnonKey, accessToken);
 
   // 4. トークンを直接渡してユーザー情報を取得（refresh_token不要）
   const {
