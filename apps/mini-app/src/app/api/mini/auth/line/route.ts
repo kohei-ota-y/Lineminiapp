@@ -250,14 +250,6 @@ async function issueAuthToken(
     return { ok: false, error: "セッション作成に失敗しました" };
   }
 
-  // サインイン成功後、パスワードを即座にランダム値で上書きして無効化
-  const { error: invalidateError } = await supabase.auth.admin.updateUserById(authUserId, {
-    password: generateSecurePassword(),
-  });
-  if (invalidateError) {
-    console.error("[auth/line] パスワード無効化に失敗:", invalidateError.message);
-  }
-
   return {
     ok: true,
     data: {
