@@ -9,7 +9,7 @@ import { fetchApi } from "@/lib/api";
 import type { PointTransaction } from "@luca/types";
 
 export default function HomePage() {
-  const { isAuthenticated, isLoading, error, member } = useAuth();
+  const { isAuthenticated, isLoading, error, member, tenantSettings } = useAuth();
 
   // ポイント履歴の状態管理
   const [transactions, setTransactions] = useState<PointTransaction[]>([]);

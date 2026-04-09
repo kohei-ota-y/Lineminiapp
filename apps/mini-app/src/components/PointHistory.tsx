@@ -1,6 +1,8 @@
 "use client";
 
 import type { PointTransaction, PointTransactionType } from "@luca/types";
+import { ListSkeleton } from "@/components/Skeleton";
+import { ErrorMessage } from "@/components/ErrorMessage";
 
 // ---------- 取引タイプの表示設定 ----------
 
@@ -71,33 +73,31 @@ interface PointHistoryProps {
   transactions: PointTransaction[];
   isLoading: boolean;
   error: string | null;
+  onRetry?: () => void;
 }
 
-export function PointHistory({ transactions, isLoading, error }: PointHistoryProps) {
+export function PointHistory({ transactions, isLoading, error, onRetry }: PointHistoryProps) {
+  // ローディング中はスケルトンを表示
+  if (isLoading) {
+    return <ListSkeleton rows={3} />;
+  }
+
   return (
     <div className="bg-white rounded-xl p-4 shadow-sm">
       <h2 className="font-bold text-lg mb-3">ポイント履歴</h2>
 
-      {/* ローディング */}
-      {isLoading && (
-        <div className="flex items-center justify-center py-6">
-          <div className="animate-spin h-5 w-5 border-2 border-luca-primary border-t-transparent rounded-full" />
-          <span className="ml-2 text-gray-400 text-sm">読み込み中...</span>
-        </div>
-      )}
-
       {/* エラー */}
-      {!isLoading && error && (
-        <p className="text-red-500 text-sm py-2">{error}</p>
+      {error && (
+        <ErrorMessage message={error} onRetry={onRetry} />
       )}
 
       {/* 空の場合 */}
-      {!isLoading && !error && transactions.length === 0 && (
+      {!error && transactions.length === 0 && (
         <p className="text-gray-400 text-sm">まだポイント履歴はありません</p>
       )}
 
       {/* 履歴リスト */}
-      {!isLoading && !error && transactions.length > 0 && (
+      {!error && transactions.length > 0 && (
         <ul className="divide-y divide-gray-100">
           {transactions.map((tx) => {
             const config = typeConfigs[tx.type];

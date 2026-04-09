@@ -25,8 +25,20 @@ interface AuthMember {
   visitCount: number;
 }
 
+export interface TenantSettingsCamel {
+  brandColor: string;
+  logoUrl: string | null;
+  featurePoint: boolean;
+  featureCoupon: boolean;
+  featureStamp: boolean;
+  featureReservation: boolean;
+  featureOrder: boolean;
+  pointRate: number;
+}
+
 interface AuthContextValue {
   member: AuthMember | null;
+  tenantSettings: TenantSettingsCamel | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
@@ -47,6 +59,7 @@ interface AuthApiResponse {
 
 const AuthContext = createContext<AuthContextValue>({
   member: null,
+  tenantSettings: null,
   isAuthenticated: false,
   isLoading: true,
   error: null,
@@ -69,6 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { isLoggedIn, isLoading: isLiffLoading, error: liffError, getIDToken } = useLiff();
 
   const [member, setMember] = useState<AuthMember | null>(null);
+  const [tenantSettings, setTenantSettings] = useState<TenantSettingsCamel | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
@@ -129,6 +143,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // 4. 会員情報を保持
         setMember(memberData);
+
+        // 5. テナント設定を取得
+        await fetchTenantSettings(accessToken);
       } finally {
         setIsAuthLoading(false);
       }
@@ -136,6 +153,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     authenticate();
   }, [isLiffLoading, isLoggedIn, getIDToken]);
+
+  /**
+   * テナント設定を取得し、ブランドカラーをCSS変数に反映する。
+   */
+  const fetchTenantSettings = async (accessToken: string) => {
+    try {
+      const res = await fetch("/api/mini/tenant", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const body = await res.json();
+      if (body.ok && body.data?.settings) {
+        const settings: TenantSettingsCamel = body.data.settings;
+        setTenantSettings(settings);
+
+        // ブランドカラーをCSS変数に適用
+        document.documentElement.style.setProperty(
+          "--luca-primary",
+          settings.brandColor,
+        );
+      }
+    } catch {
+      // テナント設定の取得失敗は致命的ではないため、エラーは無視する
+    }
+  };
 
   /**
    * /api/mini/members/me を呼んで会員情報を最新に更新する。
@@ -158,7 +199,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAuthenticated = member !== null;
 
   return (
-    <AuthContext.Provider value={{ member, isAuthenticated, isLoading, error, refreshMember }}>
+    <AuthContext.Provider value={{ member, tenantSettings, isAuthenticated, isLoading, error, refreshMember }}>
       {children}
     </AuthContext.Provider>
   );
